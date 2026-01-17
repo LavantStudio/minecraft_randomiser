@@ -1,11 +1,26 @@
 import json, os, random
 
+global available_rp; global available_dp
+
 errors = {0: "OK", 1: "Directory not found"}
 recipe_dir = "data/minecraft/recipe/"
+lang_dir = "assets/minecraft/lang/"
 
 def check_valid_working_environment():
+    global available_rp; global available_dp
     if not "data" in os.listdir():
-        erint(1, True, "data, possibly executed in wrong dir")
+        #erint(1, True, "data, possibly executed in wrong dir")
+        available_dp = False
+    else:
+        available_dp = True
+    if not "assets" in os.listdir():
+        #erint(1, True, "data, possibly executed in wrong dir")
+        available_rp = False
+    else:
+        available_rp = True
+
+
+## Recipes
 
 def randomise_recipes(recycle_list = False, custom_list: list = []):
     global ingredient_amount; global ingredients
@@ -118,6 +133,74 @@ def get_ingredients():
     print(f"Read {amount} recipes, found {ingredient_amount} ingredients")
     return ingredients
 
+
+## Lang
+
+def randomise_lang(langid= "en_us"):
+    entries = get_lang(langid)
+    pool = []
+    todo = len(entries)
+    done = 0
+    random.shuffle(entries)
+    if langid + ".json" in os.listdir(lang_dir):
+        lang = open(lang_dir + langid + ".json")
+        langg = json.loads(lang.read())
+        lang.close()
+        for i in langg:
+            proposal = entries.pop()
+            targets = ["%s", "%1$s", "%2$s", "%3$s"]
+            for l in targets:
+                proposalvar = clamp(proposal.count(l), 0, 1)
+                targetvar = clamp(langg[i].count(l), 0, 1)
+                if targetvar > proposalvar:
+                    print(proposal, proposalvar, langg[i], targetvar)
+                tries = 0
+                while len(pool) < 1 and proposalvar > 0:
+                    if tries > len(entries):
+                        pool.append("Herobrine")
+                    entries = [proposal] + entries
+                    print(proposal, proposalvar, proposal.count(l), len(entries))
+                    proposal = entries.pop()
+                    proposalvar = clamp(proposal.count(l), 0, 1)
+                    tries += 1
+                if proposalvar > targetvar:
+                    proposal = proposal.replace(l, pool.pop())
+                if proposalvar < targetvar:
+                    proposall = proposal.split()
+                    randlen = len(proposall) - 1
+                    alltaregets = False
+                    print(proposall)
+                    for z in proposall:
+                        if z in targets:
+                            alltaregets = True
+                            break
+                        else:
+                            alltaregets = False
+                    randno = random.randint(0, randlen)
+                    while proposall[randno] in targets and alltaregets == False:
+                        randno = random.randint(0, randlen)
+                        print(proposall, randno, proposal, alltaregets)
+                    pool.append(proposall[randno])
+                    proposall[randno] = l
+                    proposal = list_to_str(proposall)
+                if targetvar > proposalvar:
+                    print(proposal, proposalvar, langg[i], targetvar)
+            langg[i] = proposal
+            done += 1
+            print(f"{(done / todo) * 100}% complete")
+        lang = open(lang_dir + langid + ".json", "w")
+        lang.write(json.dumps(langg, indent=4))
+
+def get_lang(langid = "en_us"):
+    entries = []
+    if langid + ".json" in os.listdir(lang_dir):
+        lang = open(lang_dir + langid + ".json")
+        langg = json.loads(lang.read())
+        lang.close()
+        for i in langg.values():
+            entries.append(i)
+    return entries
+
 def pick_ingredient(delete = True):
     global ingredients
     if len(ingredients) < 2:
@@ -142,6 +225,19 @@ def erint(msg, fatal = False, details = []):
     if fatal:
         quit()
 
+def list_to_str(lis):
+    stri = ""
+    for i in lis:
+        if isinstance(i, str):
+            stri = stri + i + " "
+    return stri.rstrip()
+
+def clamp(value, min_val, max_val):
+    return max(min(value, max_val), min_val)
 
 check_valid_working_environment()
-randomise_recipes()
+print(list_to_str(["pi", "is", "cool"]))
+if available_dp == True:
+    randomise_recipes()
+if available_rp == True:
+    randomise_lang()
