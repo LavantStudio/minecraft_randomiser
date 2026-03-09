@@ -5,6 +5,7 @@ global available_rp; global available_dp
 errors = {0: "OK", 1: "Directory not found"}
 recipe_dir = "data/minecraft/recipe/"
 lang_dir = "assets/minecraft/lang/"
+biome_dir = "data/minecraft/worldgen/biome/"
 
 def check_valid_working_environment():
     global available_rp; global available_dp
@@ -215,6 +216,44 @@ def pick_ingredient(delete = True):
         random.shuffle(ingredients)
     return choice
 
+
+## Worldgen
+### Biomes
+
+def randomise_biomes(method = 0):
+    if not os.path.isdir(biome_dir):
+        erint(1, False, biome_dir)
+        return
+    
+    for i in os.listdir(biome_dir):
+        biome = open(biome_dir + i)
+        biomee = json.loads(biome.read())
+        if method == 0: # Pure random
+            biomee["has_precipitation"] = randbool()
+            biomee["temperature"] = round(random.uniform(0.0, 2.0), 1)
+            if randbool() == True:
+                biomee["temperature_modifier"] = "frozen"
+            else:
+                biomee["temperature_modifier"] = "none"
+            biomee["effects"]["water_color"] = randhex()
+            if randbool():
+                biomee["effects"]["grass_color"] = randhex()
+            elif "grass_color" in biomee["effects"]:
+                del biomee["effects"]["grass_color"]
+            if randbool():
+                biomee["effects"]["foliage_color"] = randhex()
+            elif "foliage_color" in biomee["effects"]:
+                del biomee["effects"]["foliage_color"]
+            if randbool():
+                biomee["effects"]["dry_foliage_color"] = randhex()
+            elif "dry_foliage_color" in biomee["effects"]:
+                del biomee["effects"]["dry_foliage_color"]
+        biome = open(biome_dir + i, "w")
+        print(f"Randomised {i}: ", biome.write(json.dumps(biomee, indent=4)), " characters written")
+
+
+## Misc Functions
+
 def erint(msg, fatal = False, details = []):
     if fatal:
         print("\x1b[31m", end="")
@@ -235,9 +274,18 @@ def list_to_str(lis):
 def clamp(value, min_val, max_val):
     return max(min(value, max_val), min_val)
 
+def randbool():
+    return bool(random.randint(0, 1))
+
+def randhex():
+    hexe = "#" + str(hex(random.randint(0, 16777215))).lstrip("0x")
+    while len(hexe) < 7:
+        hexe += "0"
+    return hexe
+
 check_valid_working_environment()
-print(list_to_str(["pi", "is", "cool"]))
 if available_dp == True:
-    randomise_recipes()
+    #randomise_recipes()
+    randomise_biomes(0)
 if available_rp == True:
     randomise_lang()
